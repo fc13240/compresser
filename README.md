@@ -15,7 +15,7 @@
 
 ## compress.js用法
 
-#### node compress.js [sourceFilePath] [miniFilePath] 
+#### node compress.js [sourceFilePath] [miniFilePath] [--colors=[true|false]]
 * node compress.js /source-path	(压缩指定目录到默认目录)
 * node compress.js /source-path /target-path (压缩指定目录)
 * node compress.js /data/js-source/test.js　(压缩指定目录到默认目录)

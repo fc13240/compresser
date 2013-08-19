@@ -5,14 +5,16 @@ var fs = require('fs'),
 	path = require('path'),
 	cssmin = require('node-css-compressor').cssmin,
 	colors;
+//是否用颜色显示
+var _isAddColor = false;
 try{
 	var colors = require('colors');
+	_isAddColor = !!colors;
 }catch(e){}
+
 var Compress = (function(){
 	//是否显示程序运行过程
 	var _isShowProcess = true,
-	//是否用颜色显示
-	_isAddColor = !!colors,
 	//记录出现的错误数
 	_errorNum = 0,
 	//压缩的目标目录正则表达式
@@ -250,13 +252,23 @@ var Compress = (function(){
 	};
 })();
 
-var arg = process.argv;
+var args = [].slice.call(process.argv);
 //命令行进行指定文件压缩
-if(arg.length > 2){
-	var fileIn = arg[2],
+if(args.length > 2){
+	for(var i = 0;i<args.length;i++){
+		var arg = args[i];
+		if(arg.indexOf('--colors') == 0){
+			var arr = args.splice(i,1)[0].split('=');
+			if(arr && arr.length == 2){
+				_isAddColor && (_isAddColor = 'false' != arr[1]);
+			}
+			i--;
+		}
+	}
+	var fileIn = args[2],
 		fileOut = '';
 	if(arg.length > 3){
-		fileOut = arg[3];
+		fileOut = args[3];
 	}
 	fs.stat(fileIn,function(err,stats){
 		if(err){
