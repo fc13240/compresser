@@ -41,34 +41,14 @@ var Compress = (function(){
 		return fs.existsSync ? fs.existsSync : path.existsSync;
 	})(),
 	//同步创建父级目录
-	_mkdirSync = function (toPath,callback){
-		var arr = toPath.split(path.sep);
-		var mode = 0755;
-		if(arr[0] == '.'){
-			arr.shift();
+	_mkdirSync = function(mkPath){
+		var parentPath = path.dirname(mkPath);
+		if(!fs.existsSync(parentPath)){
+			_mkdirSync(parentPath);
 		}
-		if(arr[0] == '..'){
-			arr.splice(0,2,path.join(arr[0],arr[1]));
-		}
-		function inner(p){
-			//处理windows的磁盘目录
-			if(p.indexOf(':') == p.length-1){
-				inner(path.join(p,arr.shift()));
-				return;
-			}else if(!_pathExistsSync(p)){
-				_myLog.info('[ mkdir ] '+p);
-				fs.mkdirSync(p,mode);
-			}
-			if(arr.length){
-				inner(path.join(p,arr.shift()));
-			}else{
-				callback && callback();
-			}
-		}
-		if(arr.length){
-			inner(arr.shift());
-		}else{
-			callback && callback();
+		if(!fs.existsSync(mkPath)){
+			fs.mkdirSync(mkPath);
+			_myLog.info('[ mkdir ] '+mkPath);
 		}
 	},
 	//格式化路径
@@ -159,71 +139,70 @@ var Compress = (function(){
 		_pathExists(fileOut,function(exists){
 			//当目标文件不存在或源文件有修改时进行压缩处理
 			//(***目标文件不能人为修改**)
-			_mkdirSync(path.dirname(fileOut),function(){
-				if(!exists || fs.lstatSync(fileIn).mtime > fs.lstatSync(fileOut).mtime){
-					var ext = path.extname(fileIn);
-					//后缀为.js的且不是.min.js的进行压缩，否则直接进行复制(可能为非文本文件)
-					if(ext == '.js'/* && fileIn.lastIndexOf('.min.js') != fileIn.length-7*/){
-						//var originCode = fs.readFileSync(fileIn,'utf8');
-						try{
-							var finalCode = '';
-							//新方法一
-							var obj = UglifyJS.minify(fileIn,{
-								mangle: {
-									'except' : ['require']//不希望被替换的参数
-								}
-							});
-							finalCode = obj.code;
-							
-							/*
-							//新方法二
-							var ast = UglifyJS.parse(originCode);
-							ast.figure_out_scope();
-							ast.compute_char_frequency();
-							ast.mangle_names({
+			_mkdirSync(path.dirname(fileOut));
+			if(!exists || fs.lstatSync(fileIn).mtime > fs.lstatSync(fileOut).mtime){
+				var ext = path.extname(fileIn);
+				//后缀为.js的且不是.min.js的进行压缩，否则直接进行复制(可能为非文本文件)
+				if(ext == '.js'/* && fileIn.lastIndexOf('.min.js') != fileIn.length-7*/){
+					//var originCode = fs.readFileSync(fileIn,'utf8');
+					try{
+						var finalCode = '';
+						//新方法一
+						var obj = UglifyJS.minify(fileIn,{
+							mangle: {
 								'except' : ['require']//不希望被替换的参数
-							});
-							finalCode = ast.print_to_string();
-							*/
+							}
+						});
+						finalCode = obj.code;
 						
-							/*
-							//老方法
-							var ast = jsp.parse(originCode);
-							ast = pro.ast_lift_variables(ast);
-							//过滤参数
-							ast = pro.ast_mangle(ast,{
-								'except' : ['require']//不希望被替换的参数
-							});
-							ast = pro.ast_squeeze(ast);
-							
-							finalCode = pro.gen_code(ast);
-							*/
-							fs.writeFileSync(fileOut,finalCode,'utf8');
-							var str = '[ *** create js *** ] [ time:'+_myTime.get(fileIn)+'ms ] '+fileIn;
-							_myLog.info(str);
-						}catch(e){
-							_errorNum++;
-							var str = '[ *** error *** ] [message:"'+e.message+'",line:'+e.line+',col:'+e.col+'] '+fileIn;
-							_myLog.error(str);
-						}
-						callback && callback();
-					}else if(ext == '.css'){
-						var originCode = fs.readFileSync(fileIn,'utf8');
-						var minCode = cssmin(originCode);
-						//处理css里的Matrix滤镜,第二个参数前加一个空格
-						minCode = minCode.replace(/(filter:progid:DXImageTransform\.Microsoft\.Matrix\([^,]+,)/,'$1 ');
-						fs.writeFileSync(fileOut,minCode,'utf8');
-						var str = '[ *** create css *** ] [ time:'+_myTime.get(fileIn)+'ms ] '+fileIn;
+						/*
+						//新方法二
+						var ast = UglifyJS.parse(originCode);
+						ast.figure_out_scope();
+						ast.compute_char_frequency();
+						ast.mangle_names({
+							'except' : ['require']//不希望被替换的参数
+						});
+						finalCode = ast.print_to_string();
+						*/
+					
+						/*
+						//老方法
+						var ast = jsp.parse(originCode);
+						ast = pro.ast_lift_variables(ast);
+						//过滤参数
+						ast = pro.ast_mangle(ast,{
+							'except' : ['require']//不希望被替换的参数
+						});
+						ast = pro.ast_squeeze(ast);
+						
+						finalCode = pro.gen_code(ast);
+						*/
+						fs.writeFileSync(fileOut,finalCode,'utf8');
+						var str = '[ *** create js *** ] [ time:'+_myTime.get(fileIn)+'ms ] '+fileIn;
 						_myLog.info(str);
-						callback && callback();
-					}else{
-						_copyFile(fileIn,fileOut,callback);
-					}					
-				}else{
-					_myLog.log('[ not modify ] [ time:',_myTime.get(fileIn),'ms ]',fileIn);
+					}catch(e){
+						_errorNum++;
+						var str = '[ *** error *** ] [message:"'+e.message+'",line:'+e.line+',col:'+e.col+'] '+fileIn;
+						_myLog.error(str);
+					}
 					callback && callback();
-				}
-			});
+				}else if(ext == '.css'){
+					var originCode = fs.readFileSync(fileIn,'utf8');
+					var minCode = cssmin(originCode);
+					//处理css里的Matrix滤镜,第二个参数前加一个空格
+					minCode = minCode.replace(/(filter:progid:DXImageTransform\.Microsoft\.Matrix\([^,]+,)/,'$1 ');
+					fs.writeFileSync(fileOut,minCode,'utf8');
+					var str = '[ *** create css *** ] [ time:'+_myTime.get(fileIn)+'ms ] '+fileIn;
+					_myLog.info(str);
+					callback && callback();
+				}else{
+					_copyFile(fileIn,fileOut,callback);
+				}					
+			}else{
+				_myLog.log('[ not modify ] [ time:',_myTime.get(fileIn),'ms ]',fileIn);
+				callback && callback();
+			}
 		});
 	},
 	/**遍历整个文件夹，不存在时创建*/
@@ -236,23 +215,22 @@ var Compress = (function(){
 		_bDir(_formatPath(oldDir),_formatPath(newDir));
 		function _bDir(originDir,finalDir){
 			var files = fs.readdirSync(originDir);
-			_mkdirSync(finalDir,function(){
-				files.forEach(function(file){
-					var pathname = path.join(originDir,file),
-						toPath = path.join(finalDir, file);
-						stat = fs.lstatSync(pathname);
-					
-					if(stat.isDirectory()){
-						var str = '[ * sub dir ] '+pathname;
-						_myLog(str);
-						_bDir(pathname,toPath);
-					}else{
-						_myTime.timeList.length ++;
-						_compressFile(pathname,toPath,function(){
-							_myTime.getTotalTime();//得到总运行时间
-						});
-					}
-				});
+			_mkdirSync(finalDir);
+			files.forEach(function(file){
+				var pathname = path.join(originDir,file),
+					toPath = path.join(finalDir, file);
+					stat = fs.lstatSync(pathname);
+				
+				if(stat.isDirectory()){
+					var str = '[ * sub dir ] '+pathname;
+					_myLog(str);
+					_bDir(pathname,toPath);
+				}else{
+					_myTime.timeList.length ++;
+					_compressFile(pathname,toPath,function(){
+						_myTime.getTotalTime();//得到总运行时间
+					});
+				}
 			});
 		}
 	},
