@@ -42,25 +42,25 @@ var Compress = (function(){
 	})(),
 	//同步创建父级目录
 	_mkdirSync = function (toPath,callback){
-		var arr = toPath.split('/');
+		var arr = toPath.split(path.sep);
 		var mode = 0755;
 		if(arr[0] == '.'){
 			arr.shift();
 		}
 		if(arr[0] == '..'){
-			arr.splice(0,2,arr[0]+'/'+arr[1]);
+			arr.splice(0,2,path.join(arr[0],arr[1]));
 		}
 		function inner(p){
 			//处理windows的磁盘目录
 			if(p.indexOf(':') == p.length-1){
-				inner(p+'/'+arr.shift());
+				inner(path.join(p,arr.shift()));
 				return;
 			}else if(!_pathExistsSync(p)){
 				_myLog.info('[ mkdir ] '+p);
 				fs.mkdirSync(p,mode);
 			}
 			if(arr.length){
-				inner(p+'/'+arr.shift());
+				inner(path.join(p,arr.shift()));
 			}else{
 				callback && callback();
 			}
@@ -238,8 +238,8 @@ var Compress = (function(){
 			var files = fs.readdirSync(originDir);
 			_mkdirSync(finalDir,function(){
 				files.forEach(function(file){
-					var pathname = originDir + '/' + file,
-						toPath = finalDir + '/' + file;
+					var pathname = path.join(originDir,file),
+						toPath = path.join(finalDir, file);
 						stat = fs.lstatSync(pathname);
 					
 					if(stat.isDirectory()){
