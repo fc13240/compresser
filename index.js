@@ -28,12 +28,12 @@ var Compress = (function(){
 			console.log.apply(null,Array.prototype.splice.call(arguments,0));
 		}
 	},
-	_myLog.log = function(){},//_myLog,
+	_myLog.log = _myLog,
 	_myLog.info = function(msg){
-		// _myLog.log(_isAddColor?msg.green:msg);
+		_myLog(_isAddColor?msg.green:msg);
 	},
 	_myLog.important = _myLog.error = function(msg){
-		_myLog.log(_isAddColor?msg.red:msg);
+		_myLog(_isAddColor?msg.red:msg);
 	}
 	//node 0.7+ 把path里的exists和existsSync都迁移到了fs里
 	_pathExists = (function(){
@@ -80,7 +80,7 @@ var Compress = (function(){
 					p = p.replace(/(.*?)\/?$/,'$1'+NO_SOURCE_SUFFIX);
 				}
 			}
-			_myLog.log('[*** default path ***]','"'+_p+'"','to','"'+p+'"');
+			_myLog('[*** default path ***]','"'+_p+'"','to','"'+p+'"');
 		}
 		return p;
 	},
@@ -97,7 +97,7 @@ var Compress = (function(){
 		get : function(name){
 			var oldDate = this.timeList[name];
 			if(!oldDate){
-				_myLog.log('[time not fond]',name);
+				_myLog('[time not fond]',name);
 				return 0;
 			}
 			delete this.timeList[name];
@@ -160,23 +160,19 @@ var Compress = (function(){
 	})(),
 	/**压缩单个文件*/
 	_compressFile = function (fileIn,fileOut,callback){
-
 		fileIn = _formatPath(fileIn);
-		var isTrue = fileIn.indexOf('ad/') > -1;
-		isTrue && _myLog(1);
 		_myTime.set(fileIn);
 		fileOut = _formatPath(fileOut) || _getTargetPath(fileIn);
 
 		_pathExists(fileOut,function(exists){
 			//当目标文件不存在或源文件有修改时进行压缩处理
 			//(***目标文件不能人为修改**)
-			_mkdirSync(path.dirname(fileOut));isTrue && _myLog(2);
-			if(!exists || fs.lstatSync(fileIn).mtime > fs.lstatSync(fileOut).mtime){isTrue && _myLog(3);
+			_mkdirSync(path.dirname(fileOut));
+			if(!exists || fs.lstatSync(fileIn).mtime > fs.lstatSync(fileOut).mtime){
 				var ext = path.extname(fileIn);
 				//后缀为.js的且不是.min.js的进行压缩，否则直接进行复制(可能为非文本文件)
 				if(ext == '.js'/* && fileIn.lastIndexOf('.min.js') != fileIn.length-7*/){
-					var originCode = fs.readFileSync(fileIn,'utf8');
-					isTrue && _myLog(4+fileIn);
+					//var originCode = fs.readFileSync(fileIn,'utf8');
 					try{
 						var finalCode = '';
 						//新方法一
@@ -185,18 +181,18 @@ var Compress = (function(){
 								'except' : ['require']//不希望被替换的参数
 							}
 						});
-						finalCode = obj.code;isTrue && _myLog(5,obj);
+						finalCode = obj.code;
 						
-						
+						/*
 						//新方法二
-						// var ast = UglifyJS.parse(originCode);
-						// ast.figure_out_scope();
-						// ast.compute_char_frequency();
-						// ast.mangle_names({
-						// 	'except' : ['require']//不希望被替换的参数
-						// });
-						// finalCode = ast.print_to_string();
-						
+						var ast = UglifyJS.parse(originCode);
+						ast.figure_out_scope();
+						ast.compute_char_frequency();
+						ast.mangle_names({
+							'except' : ['require']//不希望被替换的参数
+						});
+						finalCode = ast.print_to_string();
+						*/
 					
 						/*
 						//老方法
@@ -210,12 +206,10 @@ var Compress = (function(){
 						
 						finalCode = pro.gen_code(ast);
 						*/
-						isTrue && _myLog(5,finalCode);
 						fs.writeFileSync(fileOut,finalCode,'utf8');
 						var str = '[ *** create js *** ] [ time:'+_myTime.get(fileIn)+'ms ] '+fileIn;
 						_myLog.info(str);
 					}catch(e){
-						isTrue && _myLog(5,e);
 						_errorNum++;
 						var str = '[ *** error *** ] [message:"'+e.message+'",line:'+e.line+',col:'+e.col+','+JSON.stringify(e)+'] '+fileIn;
 						_myLog.error(str);
@@ -234,7 +228,6 @@ var Compress = (function(){
 					_copyFile(fileIn,fileOut,callback);
 				}					
 			}else{
-				isTrue && _myLog(31);
 				_myLog.log('[ not modify ] [ time:',_myTime.get(fileIn),'ms ]',fileIn);
 				callback && callback();
 			}
@@ -258,7 +251,7 @@ var Compress = (function(){
 				
 				if(stat.isDirectory()){
 					var str = '[ * sub dir ] '+pathname;
-					_myLog.log(str);
+					_myLog(str);
 					_bDir(pathname,toPath);
 				}else{
 					_myTime.timeList.length ++;
@@ -274,9 +267,9 @@ var Compress = (function(){
 	},
 	/**打印帮助信息*/
 	_help = function(){
-		_myLog.log('[ *** error *** ] command error');
-		_myLog.log('\nUsage:','node',__filename,'source','[target]');
-		_myLog.log('\t','"if target is not given,target will be source\n\t replace with Compress.TARGET_RE"');
+		_myLog('[ *** error *** ] command error');
+		_myLog('\nUsage:','node',__filename,'source','[target]');
+		_myLog('\t','"if target is not given,target will be source\n\t replace with Compress.TARGET_RE"');
 	}
 	return {
 		//压缩单个文件
