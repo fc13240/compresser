@@ -179,6 +179,9 @@ var Compress = (function(){
 						var obj = UglifyJS.minify(fileIn,{
 							mangle: {
 								'except' : ['require']//不希望被替换的参数
+							},
+							output: {
+								ascii_only: true
 							}
 						});
 						finalCode = obj.code;
