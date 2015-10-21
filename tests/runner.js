@@ -4,7 +4,7 @@ function pass(msg){
 	msg = '[pass] '+msg;
 	console.log(msg.green);
 }
-function fail(){
+function fail(msg){
 	msg = '[fail] '+msg;
 	console.log(msg.red);
 }
