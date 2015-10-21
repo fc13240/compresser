@@ -1,0 +1,13 @@
+{
+  "name": "compresser",
+  "version": "0.1.0",
+  "devDependencies": {
+    "watchify": "~0.1.0",
+    "catw": "~0.0.1",
+    "tap": ">2.0"
+  },
+  "scripts": {
+    "test": "tap tests/*.js",
+    "abc": "ap tests/runner.js"
+  }
+}
