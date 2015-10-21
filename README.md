@@ -1,4 +1,4 @@
-# 借助于Sublime Text和Uglify实现程序自动压缩脚本
+# 借助于Sublime Text和Uglify实现程序自动压缩脚本 [![Build Status](https://travis-ci.org/tonny-zhang/compresser.svg?branch=master)](https://travis-ci.org/tonny-zhang/compresser)
 
 ## 使用步骤如下：
 * 一、Uglify压缩脚本安装
